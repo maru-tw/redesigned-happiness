@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleep Plan</title>
+<style>
+  :root{
+    --bg:#f6f3ee; --card:#ffffff; --ink:#1f2430; --muted:#6b7080; --line:#e6e1d8;
+    --accent:#3f5bd9; --accent-soft:#e8ecfc; --good:#2f8f5b; --warn:#b26a00; --warn-soft:#fdf1df;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14161c; --card:#1d2029; --ink:#e9eaf0; --muted:#9aa0b0; --line:#2c303c;
+      --accent:#8ea2ff; --accent-soft:#252c4a; --good:#5cc78e; --warn:#f0b04d; --warn-soft:#3a2e1b;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+  header h1{font-size:1.5rem;margin:0}
+  header p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+  .tabs{display:flex;gap:8px;margin:18px 0}
+  .tabs button{flex:1;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+  .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .daynav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .daynav button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+  .daynav button:disabled{opacity:.35;cursor:default}
+  .big{font-size:1.9rem;font-weight:700;margin:0}
+  .date{color:var(--muted);font-size:.95rem}
+  .phase{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-top:8px;text-transform:uppercase;letter-spacing:.03em}
+  h2{font-size:1.05rem;margin:0 0 10px}
+  .focus{font-size:1.1rem;font-weight:600;margin:12px 0 0}
+  ul.check{list-style:none;padding:0;margin:0}
+  ul.check li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
+  ul.check li:first-child{border-top:0}
+  ul.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--good);flex:none}
+  ul.check li.done span{color:var(--muted);text-decoration:line-through}
+  .tip{background:var(--warn-soft);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:.95rem}
+  .tip b{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:.95rem}
+  td{padding:6px 0;border-top:1px solid var(--line);vertical-align:top}
+  tr:first-child td{border-top:0}
+  td:first-child{width:72px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+  .note{color:var(--muted);font-size:.85rem;margin-top:8px}
+  .all .row{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+  .all .num{flex:none;width:42px;height:42px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700}
+  .all .row.today .num{background:var(--accent);color:#fff}
+  .all .meta{font-size:.82rem;color:var(--muted)}
+  .all .t{font-weight:600}
+  .prog{font-size:.8rem;color:var(--good);font-weight:600}
+  .settings{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+  .settings input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+  .goals li{margin:4px 0}
+  .hidden{display:none}
+  .wrap{padding-bottom:96px}
+  .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:10;border:0;border-radius:99px;padding:12px 20px;background:var(--accent);color:#fff;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:85vh;overflow-y:auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:8px 18px 28px;transform:translateY(100%);transition:transform .25s ease}
+  .open .scrim{opacity:1;pointer-events:auto}
+  .open .sheet{transform:none}
+  .sheet-inner{max-width:720px;margin:0 auto}
+  .grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:6px auto 10px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-8px;background:var(--card);padding:6px 0}
+  .sheet-head h2{margin:0;font-size:1.15rem}
+  .x{border:1px solid var(--line);background:none;color:var(--ink);border-radius:99px;width:34px;height:34px;font-size:1.1rem;cursor:pointer}
+  .sheet h3{font-size:.95rem;margin:16px 0 6px;color:var(--accent)}
+  .sheet .lead{font-weight:600;margin:0 0 6px}
+  .sheet ul{margin:0;padding-left:20px}
+  .sheet li{margin:5px 0}
+  body.open{overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Two-week sleep plan</h1>
+    <p>Corrected age ~6 months · Goal: fewer night wakings</p>
+  </header>
+
+  <div class="tabs">
+    <button id="tabToday" class="on">Today</button>
+    <button id="tabAll">All days</button>
+    <button id="tabRhythm">Daily rhythm</button>
+  </div>
+
+  <!-- TODAY -->
+  <section id="viewToday">
+    <div class="card">
+      <div class="daynav">
+        <button id="prev" aria-label="Previous day">‹</button>
+        <div style="text-align:center;flex:1">
+          <p class="big" id="dTitle">Day 1</p>
+          <div class="date" id="dDate"></div>
+          <span class="phase" id="dPhase"></span>
+        </div>
+        <button id="next" aria-label="Next day">›</button>
+      </div>
+      <p class="focus" id="dFocus"></p>
+    </div>
+    <div class="card">
+      <h2>Today's checklist</h2>
+      <ul class="check" id="dList"></ul>
+    </div>
+    <div class="card"><div class="tip" id="dTip"></div></div>
+  </section>
+
+  <!-- ALL -->
+  <section id="viewAll" class="hidden all"></section>
+
+  <!-- RHYTHM -->
+  <section id="viewRhythm" class="hidden">
+    <div class="card">
+      <h2>Target day (adjust ±20 min to his cues)</h2>
+      <table>
+        <tr><td>07:00</td><td>Wake up (even after a bad night) · bottle</td></tr>
+        <tr><td>09:00</td><td>Nap 1 (in cot)</td></tr>
+        <tr><td>10:15</td><td>Bottle (quiet, dim room)</td></tr>
+        <tr><td>11:30</td><td>Solids</td></tr>
+        <tr><td>12:15</td><td>Nap 2: the long one</td></tr>
+        <tr><td>13:45</td><td>Bottle</td></tr>
+        <tr><td>15:45</td><td>Nap 3: short, <b>ends by 17:00</b></td></tr>
+        <tr><td>17:00</td><td>Bottle</td></tr>
+        <tr><td>18:30</td><td>Bedtime bottle (start of routine)</td></tr>
+        <tr><td>18:45</td><td>Bath → sleeping bag → book</td></tr>
+        <tr><td>19:15</td><td>Into cot drowsy but awake</td></tr>
+      </table>
+      <p class="note">Wake windows about 2–2.5h. No catnap after 17:00.</p>
+    </div>
+    <div class="card">
+      <h2>Night rules</h2>
+      <table>
+        <tr><td>Core</td><td>2 feeds kept: around 00:00–01:00 and around 04:00–05:00</td></tr>
+        <tr><td>Others</td><td>Settle without a bottle. Whoever isn't feeding goes in.</td></tr>
+        <tr><td>Wait</td><td>Give him 5 min before going in, unless he's really upset</td></tr>
+        <tr><td>Log</td><td>Every waking, how you settled him and how long it took</td></tr>
+      </table>
+      <p class="note">Only cut feeds once your health visitor has OK'd it (he was born at 37 weeks, 2.4kg).</p>
+    </div>
+    <div class="card">
+      <h2>Goals by Day 14</h2>
+      <ul class="goals">
+        <li>First stretch of 4h or more</li>
+        <li>No more than 2 wakings</li>
+        <li>700ml or more of milk during the day</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="card settings">
+    <label for="start">Day 1 is</label>
+    <input type="date" id="start">
+    <button id="reset" style="border:1px solid var(--line);background:none;color:var(--muted);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer">Clear ticks</button>
+  </div>
+</div>
+
+<button class="fab" id="fab">🍼 Feeding tips</button>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-inner">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Daytime feeding</h2>
+      <button class="x" id="closeSheet" aria-label="Close">✕</button>
+    </div>
+
+    <h3>Wait for hunger, or feed at set times?</h3>
+    <p class="lead">Somewhere in between: keep a loose schedule, with feeds further apart.</p>
+    <ul>
+      <li>Right now he has about 6 feeds a day of around 80ml each. That's snacking. Aim for <b>4–5 feeds, 3.5–4h apart</b>, so he arrives at each one actually hungry.</li>
+      <li>Don't offer milk in between to fill gaps. Distract him with play, water from a cup with meals, or a walk.</li>
+      <li>If he refuses, stop after about 5 minutes. Try once more 20–30 minutes later, and if he still won't take it, wait until the next feed. Repeatedly pushing the bottle tends to make refusal worse.</li>
+      <li>Keep each feed to 20–30 minutes at most, then end it.</li>
+    </ul>
+
+    <h3>Before the feed: play first, or feed straight away?</h3>
+    <p>Feed <b>soon after he wakes from a nap</b>, within about 15 minutes. Change his nappy, then give the bottle. Babies usually feed best when they're rested. If he's tired, he'll fuss and refuse. Spacing the feeds out is what makes him hungry, not tiring him out.</p>
+
+    <h3>Other things worth trying</h3>
+    <ul>
+      <li><b>Teat size:</b> at 6 months he may need a faster flow, maybe the next size up. If the flow is too slow, he'll get frustrated and give up. Try one size up for a day and see if he takes more.</li>
+      <li><b>Solids:</b> give these about an hour <i>after</i> a milk feed, not just before one. Otherwise they fill him up.</li>
+      <li><b>Movement:</b> some distracted feeders take more while you walk around or rock them gently, or facing outward on your lap. It's worth an experiment.</li>
+      <li><b>Mornings:</b> the first feed of the day is usually his biggest. Make sure it's a full bottle.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const DEFAULT_START = "2026-11-23";
+
+const DAYS = [
+  {phase:"Daytime reset", focus:"Fix the day first. Nights stay as they are for now.",
+   tasks:["Wake him at 07:00","3 naps, about 2–2.5h awake between them","Last nap ends by 17:00, no catnap after","Daytime bottles in a quiet, dim room","Feed at night exactly as usual"],
+   tip:"<b>Why:</b> getting more milk in during the day means he'll need less at night. Don't change anything at night yet."},
+  {phase:"Daytime reset", focus:"Keep the day rhythm going. Book a health visitor check.",
+   tasks:["Wake him at 07:00","3 naps, last one ends by 17:00","Offer full bottles during the day","Call your health visitor about reducing night feeds","Start logging night wakings properly"],
+   tip:"<b>Ask the health visitor:</b> is it OK to keep 2 night feeds and settle the rest without milk, given he was born at 37 weeks and 2.4kg?"},
+  {phase:"New bedtime", focus:"First night of the new bedtime routine.",
+   tasks:["Wake him at 07:00 · 3 naps","Bedtime bottle at 18:30, at the start of the routine","Bath → sleeping bag → book","Into cot drowsy but awake by 19:15","Use the gentle method: sit by the cot, pick up only to calm him"],
+   tip:"<b>Expect:</b> it might take 20–45 minutes for him to fall asleep tonight. That's normal. Keep going with the same method."},
+  {phase:"New bedtime", focus:"Same routine again. Being consistent is what makes it work.",
+   tasks:["Wake him at 07:00 · 3 naps","Same bedtime routine, same order","Into cot awake","Respond to wakings the same way as last night","Log how long he took to settle"],
+   tip:"<b>Nights 2–4</b> are often the hardest. That usually means it's starting to work."},
+  {phase:"Night feeds", focus:"If the health visitor says OK: keep 2 core feeds and settle the rest.",
+   tasks:["Day rhythm + bedtime routine","Core feeds: around 00:00–01:00 and around 04:00–05:00","Other wakings: wait 5 min, then settle without milk","Whoever isn't feeding goes in for the non-feed wakings","Mum: keep your pumping schedule the same for now"],
+   tip:"<b>No OK yet?</b> Keep all the feeds and just focus on putting him down awake. That alone often cuts wakings."},
+  {phase:"Night feeds", focus:"Same rules as last night. Don't add the extra bottles back.",
+   tasks:["Day rhythm + bedtime routine","2 core feeds only","Settle the other wakings the same way every time","Check daytime milk: is it going up?","Log wakings and settle times"],
+   tip:"<b>Hunger check:</b> if daytime bottles are getting bigger, things are working."},
+  {phase:"Review", focus:"One week in. Send the export for a comparison.",
+   tasks:["Day rhythm + bedtime routine","2 core feeds only","Export the tracker data and send it for review","Move the chair halfway to the door at bedtime","Note what's working and what isn't"],
+   tip:"<b>Compare:</b> first stretch, number of wakings and daytime ml against the first week."},
+  {phase:"Consolidate", focus:"Chair halfway to the door. Same rules at night.",
+   tasks:["Wake him at 07:00 · 3 naps","Bedtime routine, into cot awake","Sit halfway to the door, use your voice more than touch","2 core feeds only","Log wakings"],
+   tip:"<b>If he's ill or teething:</b> comfort him and feed him as he needs, then go back to the plan once he's well."},
+  {phase:"Consolidate", focus:"Keep it the same. No new changes today.",
+   tasks:["Day rhythm","Bedtime routine","Chair halfway","2 core feeds only","Log wakings"],
+   tip:"<b>Steady wins:</b> going back to being held to sleep 'just once' resets the progress."},
+  {phase:"Consolidate", focus:"Chair by the door.",
+   tasks:["Day rhythm","Bedtime routine","Chair by the door, short verbal reassurance only","2 core feeds only","Log wakings"],
+   tip:"<b>Naps too:</b> try putting him down awake for at least nap 1 as well."},
+  {phase:"Consolidate", focus:"Same as yesterday.",
+   tasks:["Day rhythm","Bedtime routine","Chair by the door","2 core feeds only","Log wakings"],
+   tip:"<b>Look for:</b> him falling asleep on his own within about 15 minutes."},
+  {phase:"Independent", focus:"Leave the room after saying goodnight.",
+   tasks:["Day rhythm","Bedtime routine","Say goodnight and leave. Go back in briefly only if he's upset","2 core feeds only","Log wakings"],
+   tip:"<b>Short check-ins:</b> calm, boring and brief. Same words every time."},
+  {phase:"Independent", focus:"Same as yesterday.",
+   tasks:["Day rhythm","Bedtime routine","Leave the room","2 core feeds only","Log wakings"],
+   tip:"<b>Next step (after the holiday):</b> talk to the health visitor about dropping to 1 core feed."},
+  {phase:"Wrap-up", focus:"Last day of the plan. Send the export.",
+   tasks:["Day rhythm","Bedtime routine","2 core feeds only","Export the tracker data for a final comparison","Agree the routine you'll keep after the holiday"],
+   tip:"<b>Goals:</b> first stretch of 4h or more · at most 2 wakings · 700ml or more during the day."}
+];
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+let start = store.get("sp_start", DEFAULT_START);
+let ticks = store.get("sp_ticks", {});
+let shown = null;
+
+function parseDate(s){ const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); }
+function dayDate(i){ const d = parseDate(start); d.setDate(d.getDate() + i); return d; }
+function fmt(d){ return d.toLocaleDateString(undefined, {weekday:"long", day:"numeric", month:"long"}); }
+function todayIndex(){
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((t - parseDate(start)) / 86400000);
+}
+function doneCount(i){ return DAYS[i].tasks.filter((_,j) => ticks[i+"-"+j]).length; }
+
+function renderDay(i){
+  shown = Math.max(0, Math.min(DAYS.length-1, i));
+  const d = DAYS[shown], ti = todayIndex();
+  let label = "Day " + (shown+1);
+  if (shown === ti) label += " · Today";
+  $("dTitle").textContent = label;
+  $("dDate").textContent = fmt(dayDate(shown));
+  $("dPhase").textContent = d.phase;
+  $("dFocus").textContent = d.focus;
+  $("dTip").innerHTML = d.tip;
+  $("prev").disabled = shown === 0;
+  $("next").disabled = shown === DAYS.length-1;
+  const ul = $("dList"); ul.innerHTML = "";
+  d.tasks.forEach((t, j) => {
+    const key = shown + "-" + j, li = document.createElement("li");
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!ticks[key];
+    const sp = document.createElement("span"); sp.textContent = t;
+    if (cb.checked) li.classList.add("done");
+    cb.onchange = () => { ticks[key] = cb.checked; store.set("sp_ticks", ticks); li.classList.toggle("done", cb.checked); };
+    li.append(cb, sp); ul.append(li);
+  });
+}
+
+function renderAll(){
+  const box = $("viewAll"); box.innerHTML = "";
+  const ti = todayIndex();
+  DAYS.forEach((d, i) => {
+    const c = document.createElement("div"); c.className = "card";
+    const n = doneCount(i);
+    c.innerHTML = `<div class="row ${i===ti?"today":""}"><div class="num">${i+1}</div><div>
+      <div class="meta">${fmt(dayDate(i))} · ${d.phase}${i===ti?" · <b>Today</b>":""}</div>
+      <div class="t"></div>
+      ${n ? `<div class="prog">${n}/${d.tasks.length} done</div>` : ""}</div></div>`;
+    c.querySelector(".t").textContent = d.focus;
+    c.onclick = () => { show("Today"); renderDay(i); window.scrollTo(0,0); };
+    box.append(c);
+  });
+}
+
+function show(v){
+  ["Today","All","Rhythm"].forEach(x => {
+    $("view"+x).classList.toggle("hidden", x !== v);
+    $("tab"+x).classList.toggle("on", x === v);
+  });
+  if (v === "All") renderAll();
+}
+
+function init(){
+  $("start").value = start;
+  const ti = todayIndex();
+  renderDay(ti < 0 ? 0 : ti);
+}
+
+$("tabToday").onclick = () => { show("Today"); renderDay(Math.max(0, todayIndex())); };
+$("tabAll").onclick = () => show("All");
+$("tabRhythm").onclick = () => show("Rhythm");
+$("prev").onclick = () => renderDay(shown - 1);
+$("next").onclick = () => renderDay(shown + 1);
+$("start").onchange = e => { if (e.target.value){ start = e.target.value; store.set("sp_start", start); init(); renderAll(); } };
+$("reset").onclick = () => { ticks = {}; store.set("sp_ticks", ticks); renderDay(shown); };
+
+function sheet(open){ document.body.classList.toggle("open", open); }
+$("fab").onclick = () => sheet(true);
+$("closeSheet").onclick = () => sheet(false);
+$("scrim").onclick = () => sheet(false);
+document.addEventListener("keydown", e => { if (e.key === "Escape") sheet(false); });
+
+init();
+</script>
+</body>
+</html>
